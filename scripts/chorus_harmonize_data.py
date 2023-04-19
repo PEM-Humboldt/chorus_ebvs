@@ -53,8 +53,8 @@ def harmonize3(df_inf,df_dlog,df_wst):
                 time_object = dt.datetime.strptime(time_str, '%H:%M:%S').time()
                 times_list.append(time_object)
 
-    column_names = ['Date','Time','Fname','Absences','Presences']
-    type_dict = {'Fname': 'string',
+    column_names = ['Date','Time','File_Name','Absences','Presences']
+    type_dict = {'File_Name': 'string',
                  'Absences': float,
                  'Presences': float
                  }
@@ -142,8 +142,8 @@ def harmonize2(df_inf,df_dlog):
                 time_object = dt.datetime.strptime(time_str, '%H:%M:%S').time()
                 times_list.append(time_object)
 
-    column_names = ['Date','Time','Fname','Absences','Presences']
-    type_dict = {'Fname': 'string',
+    column_names = ['Date','Time','File_Name','Absences','Presences']
+    type_dict = {'File_Name': 'string',
                  'Absences': float,
                  'Presences': float
                  }
@@ -159,7 +159,7 @@ def harmonize2(df_inf,df_dlog):
     return df_inf_h,df_dlog_h
 
 def resampling_inference(df):
-    column_names = ['Date','Time','Fname','Absences','Presences']
+    column_names = ['Date','Time','File_Name','Absences','Presences']
     df_resamp = pd.DataFrame(columns = column_names)
     vc = df.Date.value_counts()
     a = vc.index.sort_values()
@@ -169,7 +169,7 @@ def resampling_inference(df):
         n_absences = df_aux.shape[0]-n_presences
         d = {'Date':a[i].strftime("%Y-%m-%d"),
          'Time': df.Time[i*df_aux.shape[0]],
-         'Fname': df.fname[i*df_aux.shape[0]],
+         'File_Name': df.file_name[i*df_aux.shape[0]],
          'Absences': n_absences,
          'Presences': n_presences}
         df_aux = pd.DataFrame(d, index=[0])
@@ -177,7 +177,7 @@ def resampling_inference(df):
         df_resamp = pd.concat([df_resamp,df_aux])
 
     df_resamp['Date'] = pd.to_datetime(df_resamp['Date'])
-    df_resamp['Fname'] = df_resamp['Fname'].astype('string')
+    df_resamp['File_Name'] = df_resamp['File_Name'].astype('string')
     df_resamp = df_resamp.reset_index(drop=True)
     
     return df_resamp
