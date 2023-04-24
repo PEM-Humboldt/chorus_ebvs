@@ -20,6 +20,8 @@ seaborn==0.12.2
 xarray==2023.3.0
 ```
 
+## How to run
+
 1. Install [Conda](https://docs.conda.io/projects/conda/en/stable/)
 
 2. Clone this repository
@@ -41,3 +43,5 @@ sample_data
 │       └── INCT20955_wstation_A845_20191220_20200419.xlsx
 └── metadata_workflow.xlsx
 ```
+
+4. 
