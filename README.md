@@ -44,4 +44,11 @@ sample_data
 └── metadata_workflow.xlsx
 ```
 
-4. 
+4. Create environment and install requirements
+
+```
+cd chorus_ebvs
+conda create -n chorus_env python=3.10 -y
+conda activate chorus_env
+conda install --file requirements.txt
+```
