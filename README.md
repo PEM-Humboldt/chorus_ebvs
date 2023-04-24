@@ -20,9 +20,15 @@ seaborn==0.12.2
 xarray==2023.3.0
 ```
 
-## Required files
+1. Install [Conda](https://docs.conda.io/projects/conda/en/stable/)
 
-To run the scripts, you will need to download the 'sample_data' folder and unzip its contents. Once unzipped, the directory structure should appear as follows:
+2. Clone this repository
+
+```
+git clone https://github.com/breyner-posso/chorus_ebvs/
+```
+
+3. Unzip the content of the folder 'sample_data'. Once unzipped, the directory structure should appear as follows:
 
 ```
 sample_data
@@ -34,14 +40,4 @@ sample_data
 │   └── weather_station
 │       └── INCT20955_wstation_A845_20191220_20200419.xlsx
 └── metadata_workflow.xlsx
-```
-
-## How to run
-
-1. Install [Conda](https://docs.conda.io/projects/conda/en/stable/)
-
-2. Clone this repository
-
-```
-git clone https://github.com/breyner-posso/chorus_ebvs/
 ```
