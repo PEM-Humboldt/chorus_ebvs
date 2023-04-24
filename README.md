@@ -22,7 +22,7 @@ xarray==2023.3.0
 
 ## Required files
 
-
+```
 sample_data
 ├── INCT2055
 │   ├── datalogger
@@ -32,3 +32,4 @@ sample_data
 │   └── weather_station
 │       └── INCT20955_wstation_A845_20191220_20200419.xlsx
 └── metadata_workflow.xlsx
+```
