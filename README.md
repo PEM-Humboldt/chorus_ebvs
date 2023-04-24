@@ -35,3 +35,13 @@ sample_data
 │       └── INCT20955_wstation_A845_20191220_20200419.xlsx
 └── metadata_workflow.xlsx
 ```
+
+## How to run
+
+1. Install [Conda](https://docs.conda.io/projects/conda/en/stable/)
+
+2. Clone this repository
+
+```
+git clone https://github.com/breyner-posso/chorus_ebvs/
+```
