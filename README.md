@@ -52,3 +52,22 @@ conda create -n chorus_env python=3.10 -y
 conda activate chorus_env
 conda install --file requirements.txt
 ```
+
+5. Before executing the scripts, define the following:
++ location
++ date range
++ path to the folder containing the data
++ name of the metadata file used by the workflow
+
+```
+# Enter location id
+location_id = 'INCT20955'
+# Enter dates as string in YYYY-MM-DD format
+start_date = "2020-01-01"
+end_date = "2020-01-31"
+# Enter the path to the folder containing the files
+folder_path = "sample_data"
+metadata_file = "metadata_workflow.xlsx"
+```
+
+8. Open the primary observations files, then load them into a pandas dataframe
