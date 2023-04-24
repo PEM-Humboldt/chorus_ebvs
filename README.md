@@ -22,6 +22,8 @@ xarray==2023.3.0
 
 ## Required files
 
+To run the scripts, you will need to download the 'sample_data' folder and unzip its contents. Once unzipped, the directory structure should appear as follows:
+
 ```
 sample_data
 ├── INCT2055
