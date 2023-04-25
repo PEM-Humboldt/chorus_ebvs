@@ -41,7 +41,8 @@ sample_data
 │       └── INCT20955_inferences.csv
 │   └── weather_station
 │       └── INCT20955_wstation_A845_20191220_20200419.xlsx
-└── metadata_workflow.xlsx
+├── locations_metadata.xlsx
+└── ebvs_metadata.xlsx
 ```
 
 4. Create environment and install requirements
