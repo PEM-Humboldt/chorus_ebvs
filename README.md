@@ -113,7 +113,7 @@ In this step, an EBV-ready dataset is created that contains the estimated vocal 
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md)
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/breyner-posso/chorus_ebvs/blob/main/LICENSE)
 
 ## Contact
 
