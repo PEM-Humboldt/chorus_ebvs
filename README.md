@@ -57,8 +57,9 @@ conda install --file requirements.txt
 + location
 + date range
 + path to the folder containing the data
-+ name of the metadata file used by the workflow
-
++ nane of the file that contains the metadata of the locations
++ name of the file that contains the metadata for the EBV-ready dataset that is going to be created
++ name of the NetCDF file that will contain the EBV-ready dataset. Be sure to include the .nc extension in the file name
 ```
 # Enter location id
 location_id = 'INCT20955'
@@ -67,12 +68,19 @@ start_date = "2020-01-01"
 end_date = "2020-01-31"
 # Enter the path to the folder containing the files
 folder_path = "sample_data"
-metadata_file = "metadata_workflow.xlsx"
+# Enter the nane of the file that contains the metadata of the locations
+locations_metadata_file = "locations_metadata.xlsx"
+# Enter the name of the file that contains the metadata for the EBV-ready dataset that is going to be created
+ebvs_metadata_file = "ebvs_metadata.xlsx"
+# Enter the name of the NetCDF file that will contain the EBV-ready dataset. Be sure to include the .nc extension in the file name
+ebvs_file_name = "INCT20955_phenology.nc"
 ```
 
 8. Open the primary observations files, then load them into a pandas dataframe
 
 ```
+import chorus_get_data as gdata
+
 # get_inference() imports inference raw data
 df_inf = gdata.get_inference(folder_path, location_id, start_date, end_date)
 
@@ -83,11 +91,16 @@ df_dlog = gdata.get_datalogger(folder_path, location_id, start_date, end_date)
 df_wst = gdata.get_wstation(folder_path, location_id, start_date, end_date)
 
 # get_metadata() imports metadata
-df_meta = gdata.get_metadata(folder_path, metadata_file, location_id)
+df_meta = gdata.get_metadata(folder_path, locations_metadata_file, location_id)
 ```
 
 9. Harmonize data
 
 ```
+import chorus_harmonize_data as hdata
 
+df_inf_h,df_dlog_h,df_wst_h = hdata.harmonize3(df_inf,df_dlog,df_wst)
 ```
+
+10. Create the EBV-ready dataset
+
