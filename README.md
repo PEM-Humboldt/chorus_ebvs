@@ -111,6 +111,10 @@ build_ebv(ebvs_file_name, ebvs_metadata_file, df_inf_h, df_dlog_h, df_meta)
 
 In this step, an EBV-ready dataset is created that contains the estimated vocal activity (EVA) of the anuran amphibians for the selected location and range of dates, as well as the associated climatic variables.
 
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md)
+
 ## Contact
 
 Juan Sebastian Ulloa (julloa@humboldt.org.co)
