@@ -71,3 +71,23 @@ metadata_file = "metadata_workflow.xlsx"
 ```
 
 8. Open the primary observations files, then load them into a pandas dataframe
+
+```
+# get_inference() imports inference raw data
+df_inf = gdata.get_inference(folder_path, location_id, start_date, end_date)
+
+# get_datalogger() imports weather information from dataloggers
+df_dlog = gdata.get_datalogger(folder_path, location_id, start_date, end_date)
+
+# get_wstation() imports weather information from weather station
+df_wst = gdata.get_wstation(folder_path, location_id, start_date, end_date)
+
+# get_metadata() imports metadata
+df_meta = gdata.get_metadata(folder_path, metadata_file, location_id)
+```
+
+9. Harmonize data
+
+```
+
+```
