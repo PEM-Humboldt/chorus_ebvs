@@ -105,3 +105,8 @@ df_inf_h,df_dlog_h,df_wst_h = hdata.harmonize3(df_inf,df_dlog,df_wst)
 
 10. Create the EBV-ready dataset
 
+```
+build_ebv(ebvs_file_name, ebvs_metadata_file, df_inf_h, df_dlog_h, df_meta)
+```
+
+In this step, an EBV-ready dataset is created that contains the estimated vocal activity (EVA) of the anuran amphibians for the selected location and range of dates, as well as the associated climatic variables.
