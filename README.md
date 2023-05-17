@@ -79,7 +79,7 @@ ebvs_metadata_file = "ebvs_metadata.xlsx"
 ebvs_file_name = "INCT20955_phenology.nc"
 ```
 
-8. Open the primary observations files, then load them into a pandas dataframe
+6. Open the primary observations files, then load them into a pandas dataframe
 
 ```
 import chorus_get_data as gdata
@@ -97,7 +97,7 @@ df_wst = gdata.get_wstation(folder_path, location_id, start_date, end_date)
 df_meta = gdata.get_metadata(folder_path, locations_metadata_file, location_id)
 ```
 
-9. Harmonize data
+7. Harmonize data
 
 ```
 import chorus_harmonize_data as hdata
@@ -105,7 +105,7 @@ import chorus_harmonize_data as hdata
 df_inf_h,df_dlog_h,df_wst_h = hdata.harmonize3(df_inf,df_dlog,df_wst)
 ```
 
-10. Create the EBV-ready dataset
+8. Create the EBV-ready dataset
 
 ```
 build_ebv(ebvs_file_name, ebvs_metadata_file, df_inf_h, df_dlog_h, df_meta)
