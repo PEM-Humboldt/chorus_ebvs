@@ -1,298 +1,41 @@
-"""This module contains functions to harmonize the data of the inferences and the climatic variables:
+#!/usr/bin/env python3
+
+"""This script contains functions to harmonize the data from inferences and climate variables using the temporal variable with a resolution of 15 minutes.
 """
 import numpy as np
 import pandas as pd
 import datetime as dt
+import chorus_utils as chutils
+import chorus_qc_data as qdata
 
-def harmonize3(df_inf,df_dlog,df_wst):
-    """Function to harmonize information from inferences, dataloggers and weather stations.
+def harmonize_inference(df_inf,time_list_np64,date_list,hour_list):
     
-    Args:
-        df_inf (pandas DataFrame): DataFrame that contains the information of the inferences.
-        df_dlog (pandas DataFrame): DataFrame that contains the information of the climatic variables of the dataloggers.
-        df_wst (pandas DataFrame): DataFrame that contains the information of the climatic variables of the weather stations.
-        
-    Returns:
-       df_inf_h (pandas DataFrame): DataFrame that contains the harmonized information of the inferences.
-       df_dlog_h (pandas DataFrame): DataFrame that contains the harmonized information of the datalogger.
-       df_wst_h (pandas DataFrame): DataFrame that contains the harmonized information of the weather station.
-    """
+    time_cols = ['time','date','hour']
+    eva_cols = df_inf.columns[4:].values.tolist()
+    column_names = time_cols + eva_cols
+    df_inf_h = pd.DataFrame(columns = column_names,)
     
-    df_inf_r = resampling_inference(df_inf)
+    df_inf_h['time'] = time_list_np64
+    df_inf_h['date'] = date_list
+    df_inf_h['hour'] = hour_list
+    df_aux = df_inf.groupby("date")[eva_cols].max()
+    for i in range(len(df_inf_h)):
+        values = df_aux[df_aux.index.values == df_inf_h.time.values[i]]
+        if len(values) != 0:
+            df_inf_h.iloc[i,3:] = values.values[0]
     
-    vc = df_inf_r.Date.value_counts()
-    a = vc.index.sort_values()
-    d_ini = pd.to_datetime(a[0].strftime("%Y-%m-%d"))
-    d_fin = pd.to_datetime(a[len(a)-1].strftime("%Y-%m-%d"))
-    date_list = pd.date_range(d_ini, d_fin)
-    t_ini = df_inf_r.Time[0]
-    times_list= []
-    flag = 1
-    dates_list = []
-    second = t_ini.second
-    delta_t = 15
-
-    for j in range(len(date_list)):
-
-        if (flag == 1):
-            ini_h = t_ini.hour
-        else:
-            ini_h = 0
-
-        for hour in range(ini_h,24):
-            if (flag == 1):
-                ini_t = t_ini.minute
-                flag = 0
-            else:
-                ini_t = 0
-
-            for minute in range(ini_t, 60, delta_t):
-
-                dates_list.append(date_list[j])
-                time_str = '{:02d}:{:02d}:{:02d}'.format(hour, minute,second)
-                time_object = dt.datetime.strptime(time_str, '%H:%M:%S').time()
-                times_list.append(time_object)
-
-    column_names = ['Date','Time','File_Name','Absences','Presences']
-    type_dict = {'File_Name': 'string',
-                 'Absences': float,
-                 'Presences': float
-                 }
-    df_inf_h = harmonize_inference(df_inf_r,column_names,type_dict,dates_list,times_list)
+    labels = chutils.get_inference_labels()
+    for label in labels:
+        if (label.new_name in column_names):
+            if (label.new_name != 'date' and label.new_name != 'time'):
+                df_inf_h[label.new_name] = df_inf_h[label.new_name].astype(label.new_dtype)
     
-    column_names = ['Date',
-                'Time',
-                'T(C)_WS',
-                'T_max(C)_WS',
-                'T_min(C)_WS',
-                'RH(%)_WS',
-                'RH_max(%)_WS',
-                'RH_min(%)_WS',
-                'DP(C)_WS',
-                'DP_max(C)_WS',
-                'DP_min(C)_WS',
-                'ATM(hPa)_WS',
-                'ATM_max(hPa)_WS',
-                'ATM_min(hPa)_WS',
-                'WND(m/s)_WS',
-                'Radiant(KJ/m²)_WS',
-                'Rainfall(mm)_WS'
-                ]
-    type_dict = {'T(C)_WS':float,
-                 'T_max(C)_WS':float,
-                 'T_min(C)_WS':float,
-                 'RH(%)_WS':float,
-                 'RH_max(%)_WS':float,
-                 'RH_min(%)_WS':float,
-                 'DP(C)_WS':float,
-                 'DP_max(C)_WS':float,
-                 'DP_min(C)_WS':float,
-                 'ATM(hPa)_WS':float,
-                 'ATM_max(hPa)_WS':float,
-                 'ATM_min(hPa)_WS':float,
-                 'WND(m/s)_WS':float,
-                 'Radiant(KJ/m²)_WS':float,
-                 'Rainfall(mm)_WS':float
-                 }
-    df_wst_h = harmonize_wstation(df_wst,column_names,type_dict,dates_list,times_list)
+    print("Harmonized Inference Data")
     
-    column_names = ['Date','Time','T(C)_DL','RH(%)_DL','DP(C)_DL']
-    type_dict = {'T(C)_DL': float,
-                 'RH(%)_DL': float,
-                 'DP(C)_DL': float
-                }
-    df_dlog_h = harmonize_dlogger(df_dlog, column_names, type_dict, dates_list, times_list)
+    #qdata.evaluate_nulls(df_inf_h)
+    #qdata.evaluate_duplicates(df_inf_h)
     
-    return df_inf_h,df_dlog_h,df_wst_h
-
-def harmonize2(df_inf,df_dlog):
-    
-    df_inf_r = resampling_inference(df_inf)
-    
-    vc = df_inf_r.Date.value_counts()
-    a = vc.index.sort_values()
-    d_ini = pd.to_datetime(a[0].strftime("%Y-%m-%d"))
-    d_fin = pd.to_datetime(a[len(a)-1].strftime("%Y-%m-%d"))
-    date_list = pd.date_range(d_ini, d_fin)
-    t_ini = df_inf_r.Time[0]
-    times_list= []
-    flag = 1
-    dates_list = []
-    second = t_ini.second
-    delta_t = 15
-
-    for j in range(len(date_list)):
-
-        if (flag == 1):
-            ini_h = t_ini.hour
-        else:
-            ini_h = 0
-
-        for hour in range(ini_h,24):
-            if (flag == 1):
-                ini_t = t_ini.minute
-                flag = 0
-            else:
-                ini_t = 0
-
-            for minute in range(ini_t, 60, delta_t):
-
-                dates_list.append(date_list[j])
-                time_str = '{:02d}:{:02d}:{:02d}'.format(hour, minute,second)
-                time_object = dt.datetime.strptime(time_str, '%H:%M:%S').time()
-                times_list.append(time_object)
-
-    column_names = ['Date','Time','File_Name','Absences','Presences']
-    type_dict = {'File_Name': 'string',
-                 'Absences': float,
-                 'Presences': float
-                 }
-    df_inf_h = harmonize_inference(df_inf_r,column_names,type_dict,dates_list,times_list)
-        
-    column_names = ['Date','Time','T(C)_DL','RH(%)_DL','DP(C)_DL']
-    type_dict = {'T(C)_DL': float,
-                 'RH(%)_DL': float,
-                 'DP(C)_DL': float
-                }
-    df_dlog_h = harmonize_dlogger(df_dlog, column_names, type_dict, dates_list, times_list)
-    
-    return df_inf_h,df_dlog_h
-
-def resampling_inference(df):
-    column_names = ['Date','Time','File_Name','Absences','Presences']
-    df_resamp = pd.DataFrame(columns = column_names)
-    vc = df.Date.value_counts()
-    a = vc.index.sort_values()
-    for i in range(len(a)):
-        df_aux = df[df.Date == a[i]]
-        n_presences = df_aux['inference_cnn'].sum()
-        n_absences = df_aux.shape[0]-n_presences
-        d = {'Date':a[i].strftime("%Y-%m-%d"),
-         'Time': df.Time[i*df_aux.shape[0]],
-         'File_Name': df.file_name[i*df_aux.shape[0]],
-         'Absences': n_absences,
-         'Presences': n_presences}
-        df_aux = pd.DataFrame(d, index=[0])
-        df_aux = df_aux.reset_index(drop=True)
-        df_resamp = pd.concat([df_resamp,df_aux])
-
-    df_resamp['Date'] = pd.to_datetime(df_resamp['Date'])
-    df_resamp['File_Name'] = df_resamp['File_Name'].astype('string')
-    df_resamp = df_resamp.reset_index(drop=True)
-    
-    return df_resamp
-
-def resampling_datalogger(df, temp_res_min = 15):
-    idx = []
-    i=0
-    s_minute = df.Time[i].minute
-    s_hour = df.Time[i].hour
-    idx.append(i)
-    tol_minute = 3
-
-    for i in range(1,df.shape[0]):
-        c_hour = df.Time[i].hour
-        c_minute = df.Time[i].minute
-
-        delta_hour = c_hour - s_hour
-
-        if (delta_hour == 0):
-            delta_minute = c_minute - s_minute
-        else:
-            offset_minute = 60 - s_minute
-            delta_minute = c_minute + offset_minute        
-
-        dif_minute = abs(temp_res_min - delta_minute)
-
-        if(dif_minute <= tol_minute):
-            idx.append(i)
-            s_minute = df.Time[i].minute
-            s_hour = df.Time[i].hour
-
-    df_resamp = df.loc[idx]
-    df_resamp = df_resamp.reset_index(drop=True)
-    
-    return df_resamp
-
-def harmonize_inference(df, column_names, type_dict,dates_list, times_list):
-    
-    df_h = pd.DataFrame(columns = column_names)
-    df_h['Date'] = dates_list
-    df_h['Time'] = times_list
-
-    for i in range (len(dates_list)):
-        df_aux = df[df['Date'] == dates_list[i]]
-        #df_sel = df_aux[df_aux['Time'].astype('string')==times_list[i]]
-        df_sel = df_aux[df_aux['Time']==times_list[i]]
-        if (df_sel.shape[0] != 0):
-            for j in range (2,len(column_names)):
-                df_h.at[i,column_names[j]] = df_sel.iloc[0,j]
-
-    df_h = df_h.astype(type_dict)
-    
-    return df_h
-
-def harmonize_wstation(df, column_names, type_dict,dates_list, times_list):
-    
-    df_h = pd.DataFrame(columns = column_names)
-    df_h['Date'] = dates_list
-    df_h['Time'] = times_list
-
-    for i in range (len(dates_list)):
-        df_aux = df[df['Date'] == dates_list[i]]
-        df_sel = df_aux[df_aux['Time']==times_list[i]]
-        if (df_sel.shape[0] != 0):
-            for j in range (2,len(column_names)):
-                df_h.at[i,column_names[j]] = df_sel.iloc[0,j]
-
-    df_h = df_h.astype(type_dict)
-    
-    return df_h
-
-def harmonize_dlogger(df, column_names, type_dict, dates_list, times_list):
-    
-    df_h = pd.DataFrame(columns = column_names)
-    df_h['Date'] = dates_list
-    df_h['Time'] = times_list
-
-    for i in range (len(dates_list)):
-
-        idx = []
-        th = 10
-
-        df_aux = df[df['Date'] == dates_list[i]]
-        t1 = dt.datetime.strptime(times_list[i].strftime('%H:%M:%S'), "%H:%M:%S")
-        for k in range (df_aux.shape[0]):
-            t2 = dt.datetime.strptime(df_aux.iloc[k]['Time'].strftime('%H:%M:%S'), "%H:%M:%S")
-            d = t2 - t1
-            d_min = d.total_seconds()/60
-            if (abs(d_min)<=10):
-                idx.append(k)
-            if d_min > 10:
-                break
-            #print(d_min)
-        xs = []
-        temps = []
-        rhs = []
-        dps = []
-        for k in idx:
-            xs.append(df_aux.iloc[k]['Time'].hour*60+df_aux.iloc[k]['Time'].minute)
-            temps.append(df_aux.iloc[k]['T(C)_DL'])
-            rhs.append(df_aux.iloc[k]['RH(%)_DL'])
-            dps.append(df_aux.iloc[k]['DP(C)_DL'])
-
-        value = times_list[i].hour*60+times_list[i].minute
-        temp_int = interpolation(xs, temps, value)
-        rh_int = interpolation(xs, rhs, value)
-        dp_int = interpolation(xs, dps, value)
-
-        df_h.at[i,'T(C)_DL'] = temp_int
-        df_h.at[i,'RH(%)_DL'] = rh_int
-        df_h.at[i,'DP(C)_DL'] = dp_int
-
-    df_h = df_h.astype(type_dict)
-    
-    return df_h
+    return df_inf_h
 
 def interpolation(X,Y,value):
     # calculate the mean of X and Y using the numpy's built-in method mean()
@@ -315,3 +58,144 @@ def interpolation(X,Y,value):
 
 def median(Y):
     return np.median(Y)
+
+def harmonize_datalogger(df,time_list_np64,date_list,hour_list,T_sample):
+    
+    time_cols = ['time','date','hour']
+    
+    climatic_cols = list(df.columns[2:])
+    column_names = time_cols + climatic_cols
+    df_h = pd.DataFrame(columns = column_names)
+    
+    df_h['time'] = time_list_np64
+    df_h['date'] = date_list
+    df_h['hour'] = hour_list
+    
+    lim_inf = 0
+    
+    for i in range (len(time_list_np64)):
+    
+        idx = []
+        th = T_sample
+        df_aux = df[df['date'] == np.datetime64(date_list[i])]
+        if (df_aux.shape[0] != 0):
+            df_aux = df_aux.sort_values(by='time')
+            df_aux = df_aux.reset_index(drop=True)
+            t1 = hour_list[i]
+            for k in range (lim_inf,df_aux.shape[0]):
+                t2 = df_aux.time[k]
+                datetime1 = dt.datetime.combine(date_list[i], t1)
+                datetime2 = dt.datetime.combine(date_list[i], t2)
+                d = datetime2 - datetime1
+                d_min = d.total_seconds()/60
+                if (abs(d_min)<=th):
+                        idx.append(k)
+                if d_min > th:
+                    break
+    
+            if (len(idx) != 0):
+                xs = []
+                ys = []
+                for j in range(3,len(column_names)):
+                    for k in idx:
+                        xs.append(df_aux.iloc[k]['time'].hour*60+df_aux.iloc[k]['time'].minute)
+                        ys.append(df_aux.iloc[k][j-1])
+                    x_interp = hour_list[i].hour*60+hour_list[i].minute
+                    y_interp = interpolation(xs, ys, x_interp)
+                    df_h.iloc[i,j] = y_interp
+            
+    print("\nHarmonized Climatic Variables from Datalogger\n")
+    #qdata.evaluate_nulls(df_h)
+    #qdata.evaluate_duplicates(df_h)
+        
+    return df_h
+
+def harmonize_wstation(df,time_list_np64,date_list,hour_list,T_sample):
+    time_cols = ['time','date','hour']
+
+    climatic_cols = list(df.columns[2:])
+    column_names = time_cols + climatic_cols
+    df_h = pd.DataFrame(columns = column_names)
+    
+    df_h['time'] = time_list_np64
+    df_h['date'] = date_list
+    df_h['hour'] = hour_list
+
+    for i in range (len(time_list_np64)):
+        df_aux = df[df['date'] == np.datetime64(date_list[i])]
+        df_aux = df_aux.sort_values(by='time')
+        df_aux = df_aux.reset_index(drop=True)
+        df_sel = df_aux[df_aux['time']==hour_list[i]]
+        if (df_sel.shape[0] != 0):
+            for j in range (3,df_sel.shape[1]):
+                    df_h.at[i,column_names[j]] = df_sel.iloc[0,j-1]
+
+    print("Harmonized Climatic Variables from Weather Station")
+    qdata.evaluate_nulls(df_h)
+    qdata.evaluate_duplicates(df_h)
+    
+    return df_h
+
+def harmonize3(df_inf,df_dlog,df_wst,T_sample = 15):
+    """
+    Function to harmonize information from inferences, dataloggers and weather stations.
+    
+    Args:
+        df_inf (pandas DataFrame): DataFrame that contains the information of the inferences.
+        df_dlog (pandas DataFrame): DataFrame that contains the information of the climatic variables of the dataloggers.
+        df_wst (pandas DataFrame): DataFrame that contains the information of the climatic variables of the weather stations.
+        
+    Returns:
+       df_inf_h (pandas DataFrame): DataFrame that contains the harmonized information of the inferences.
+       df_dlog_h (pandas DataFrame): DataFrame that contains the harmonized information of the datalogger.
+       df_wst_h (pandas DataFrame): DataFrame that contains the harmonized information of the weather station.
+    """
+    
+    dini = df_inf.date[0]
+    dfin = df_inf.date[len(df_inf)-1]
+    freq = str(T_sample)+"min"
+    time_list_ts = pd.date_range(dini, dfin, freq=freq)
+    time_list_np64 = np.array(time_list_ts,dtype=np.dtype('datetime64[ns]'))
+    date_list = []
+    hour_list = []
+    for ts in time_list_ts:
+        date_list.append(ts.date())
+        hour_list.append(ts.time())
+
+    df_inf_h = harmonize_inference(df_inf,time_list_np64,date_list,hour_list)
+    df_dlog_h = harmonize_datalogger(df_dlog,time_list_np64,date_list,hour_list,T_sample)
+    df_wst_h = harmonize_wstation(df_wst,time_list_np64,date_list,hour_list,T_sample)
+
+    return df_inf_h,df_dlog_h,df_wst_h
+
+def harmonize2(df_inf,df_dlog,T_sample = 15):
+    """
+    Function to harmonize information from inferences, dataloggers and weather stations.
+    
+    Args:
+        df_inf (pandas DataFrame): DataFrame that contains the information of the inferences.
+        df_dlog (pandas DataFrame): DataFrame that contains the information of the climatic variables of the dataloggers.
+        df_wst (pandas DataFrame): DataFrame that contains the information of the climatic variables of the weather stations.
+        
+    Returns:
+       df_inf_h (pandas DataFrame): DataFrame that contains the harmonized information of the inferences.
+       df_dlog_h (pandas DataFrame): DataFrame that contains the harmonized information of the datalogger.
+       df_wst_h (pandas DataFrame): DataFrame that contains the harmonized information of the weather station.
+    """
+    
+    dini = df_inf.date[0]
+    dfin = df_inf.date[len(df_inf)-1]
+    freq = str(T_sample)+"min"
+    time_list_ts = pd.date_range(dini, dfin, freq=freq)
+    time_list_np64 = np.array(time_list_ts,dtype=np.dtype('datetime64[ns]'))
+    date_list = []
+    hour_list = []
+    for ts in time_list_ts:
+        date_list.append(ts.date())
+        hour_list.append(ts.time())
+
+    df_inf_h = harmonize_inference(df_inf,time_list_np64,date_list,hour_list)
+    df_dlog_h = harmonize_datalogger(df_dlog,time_list_np64,date_list,hour_list,T_sample)
+    
+    return df_inf_h,df_dlog_h
+
