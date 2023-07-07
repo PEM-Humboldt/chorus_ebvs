@@ -147,9 +147,6 @@ def get_datalogger(folder_path, location_id, date_ini, date_fin,raw=False):
         df_new (pandas DataFrame): DataFrame that contains the climatic variables of the datalogger on the requested dates.
         df_raw (pandas DataFrame): DataFrame that contains the raw data (if required).
     """
-
-    dis = date_ini.split('-')
-    dfs = date_fin.split('-')
     
     dis = date_ini.split('-')
     dfs = date_fin.split('-')
@@ -159,14 +156,20 @@ def get_datalogger(folder_path, location_id, date_ini, date_fin,raw=False):
     except:
         print('Wrong Start Date')
         df = pd.DataFrame()
-        #return df
+        if (raw):
+            return df, df
+        else:
+            return df
     
     try:
         date_fin_dt = dt.datetime(int(dfs[0]), int(dfs[1]), int(dfs[2]))
     except:
         print('Wrong End Date')
         df = pd.DataFrame()
-        #return df
+        if (raw):
+            return df, df
+        else:
+            return df
     
     ##find files
     pattern = location_id + '_datalogger'+'*.xlsx'
@@ -178,6 +181,10 @@ def get_datalogger(folder_path, location_id, date_ini, date_fin,raw=False):
     ##copy enabled columns and set data types
     if len(find_files) == 0:
         print('No records found.')
+        if (raw):
+            return df, df
+        else:
+            return df
     else:
         df_raw = pd.DataFrame()
         list_df = []
@@ -260,16 +267,22 @@ def get_wstation(folder_path, location_id, date_ini, date_fin, raw=False):
     except:
         print('Wrong Start Date')
         df = pd.DataFrame()
-        #return df
+        if (raw):
+            return df_sel, df_raw
+        else:
+            return df_sel
     
     try:
         date_fin_dt = dt.datetime(int(dfs[0]), int(dfs[1]), int(dfs[2]))
     except:
         print('Wrong End Date')
         df = pd.DataFrame()
-        #return df
+        if (raw):
+            return df_sel, df_raw
+        else:
+            return df_sel
     
-    #find files
+    #search files
     pattern = location_id + '_wstation'+'*.xlsx'
     find_files = []
     for dirpath, dirs, files in os.walk(folder_path):
@@ -280,70 +293,107 @@ def get_wstation(folder_path, location_id, date_ini, date_fin, raw=False):
         print('No records found.')
     else:
         df_raw = pd.DataFrame()
+    
+        #copy enabled columns and set data types
+        wstation_labels = chutils.get_wstation_labels()
+        
         for i in range(len(find_files)):
             file_path = find_files[i]
-            df_proc = pd.read_excel(file_path,engine='openpyxl',index_col=False)
-            df_raw = pd.concat([df_raw,df_proc])
+            df = pd.read_excel(file_path,engine='openpyxl',index_col=False)
+    
+            proc_col_names = df.columns
+    
+            if ('invertir' in proc_col_names):
+    
+                arr_np64 = []
+                for label in wstation_labels:
+                    if (label.enable and label.ori_name in proc_col_names):
+                        if (label.new_name == 'date'):
+                            col = label.ori_name
+                            #print(col)
+                            for i in range(len(df[col])):
+                                #print(i)
+                                if (df.invertir[i]==1):
+                                    date_real = dt.datetime(df[col][i].year, df[col][i].day, df[col][i].month,df[col][i].hour,df[col][i].minute,df[col][i].second)
+                                else:
+                                    date_real = pd.to_datetime(df[col][i])
+                                    
+                                arr_np64.append(np.datetime64(date_real))
+        
+                            df[col] = arr_np64
+                        else:
+                            df[label.ori_name] = df[label.ori_name].values
+                df = df.drop(['invertir'],axis=1)
+    
+            df_raw = pd.concat([df_raw,df])
     
         #copy enabled columns and set data types
         wstation_labels = chutils.get_wstation_labels()
         df_sel_cols = pd.DataFrame()
-
+    
         raw_col_names = df_raw.columns
-        
+    
         for label in wstation_labels:
-                if (label.enable and label.ori_name in raw_col_names):
-                    df_sel_cols[label.new_name] = df_raw[label.ori_name].values
-                    if (label.new_name != 'time'):
-                        df_sel_cols[label.new_name] = df_sel_cols[label.new_name].replace('-',np.nan)
+            if (label.enable and label.ori_name in raw_col_names):
+                df_sel_cols[label.new_name] = df_raw[label.ori_name].values
+                if (label.new_name != 'time'):
+                        df_sel_cols[label.new_name] = df_sel_cols[label.new_name].replace('--',np.nan)
                         df_sel_cols[label.new_name] = df_sel_cols[label.new_name].astype(label.new_dtype)
     
-        #Preproccessing: converting UTC Hour to Local Hour                    
-        df_tot = df_sel_cols.copy()
-        dif_utc_hour = -3 
-        date_ini = df_tot['date'].dt.date.values[0]
-        time = []
-        corr = [21,22,23]
-        for i in range(len(df_tot)):
-            aux = int((df_tot['time'].iloc[i]/100)+dif_utc_hour)
-            if (aux < 0):
-                d = date_ini - dt.timedelta(days=1)
-                aux = corr[aux]
-            aux = dt.time(aux)
-            time.append(aux)
+        sel_col_names = list(df_sel_cols.columns)
     
-        dif_utc_hour = -3
-        delta = abs(dif_utc_hour)
-        date = []
-        date_ini = df_tot['date'].dt.date.values[0]
-        for i in range(delta):
-            aux = int((df_tot['time'].iloc[i]/100)+dif_utc_hour)
-            if (aux < 0):
-                d = date_ini - dt.timedelta(days=1)
-            else:
-                d = date_ini
-            date.append(d)
+        if ('time' in sel_col_names):
+            #Preproccessing: converting UTC Hour to Local Hour                    
+            df_tot = df_sel_cols.copy()
+            dif_utc_hour = -3 
+            date_ini = df_tot['date'].dt.date.values[0]
+            time = []
+            corr = [21,22,23]
+            for i in range(len(df_tot)):
+                aux = int((df_tot['time'].iloc[i]/100)+dif_utc_hour)
+                if (aux < 0):
+                    d = date_ini - dt.timedelta(days=1)
+                    aux = corr[aux]
+                aux = dt.time(aux)
+                time.append(aux)
             
-        for i in range(len(df_tot)-delta):
-            d = df_tot['date'].dt.date.values[i]
-            date.append(d)
+            dif_utc_hour = -3
+            delta = abs(dif_utc_hour)
+            date = []
+            date_ini = df_tot['date'].dt.date.values[0]
+            for i in range(delta):
+                aux = int((df_tot['time'].iloc[i]/100)+dif_utc_hour)
+                if (aux < 0):
+                    d = date_ini - dt.timedelta(days=1)
+                else:
+                    d = date_ini
+                date.append(d)
+                
+            for i in range(len(df_tot)-delta):
+                d = df_tot['date'].dt.date.values[i]
+                date.append(d)
+            
+            df_tot['date'] = date
+            df_tot['date'] = pd.to_datetime(df_tot['date'])
+            df_tot['time'] = time
+        else:
+            df_sel_cols.insert(1,'time',df_sel_cols['date'].dt.time)
+            df_tot = df_sel_cols.copy()
     
-        df_tot['date'] = date
-        df_tot['date'] = pd.to_datetime(df_tot['date'])
-        df_tot['time'] = time
+        df_tot = df_tot.reset_index(drop=True)
     
-        ##select data according to date
+        #select data according to date
         df_sel_cols = pd.DataFrame()
         df_sel_cols = df_tot.copy()
         df_sel_cols = df_sel_cols.sort_values(by='date')
         df_sel_cols = df_sel_cols.reset_index(drop=True)
-        
+            
         di = df_sel_cols['date'][0]
         df_date_ini = dt.datetime(di.year, di.month, di.day)
-        
+            
         df = df_sel_cols['date'][len(df_sel_cols['date'])-1]
         df_date_fin = dt.datetime(df.year, df.month, df.day)
-        
+            
         if (df_date_ini <= date_ini_dt):
             print('There are records SINCE the requested date.')
         else:
@@ -360,16 +410,18 @@ def get_wstation(folder_path, location_id, date_ini, date_fin, raw=False):
         
         df_sel = df_sel_cols.loc[(df_sel_cols['date'] >= date_ini_dt) & (df_sel_cols['date'] <= date_fin_dt)]
         df_sel = df_sel.reset_index(drop=True)
-
+    
+        df_sel = df_sel.sort_values(['date','time'])
+        df_sel = df_sel.reset_index(drop=True)
+    
         ##basic quality test
         qdata.evaluate_nulls(df_sel)
         qdata.evaluate_duplicates(df_sel)
-        
+
         if (raw):
             return df_sel, df_raw
         else:
             return df_sel
-
 
 def get_metadata(folder_path, file_name, location_id):
     """Function to obtain basic metadata of the location from a metadata file.

@@ -111,6 +111,7 @@ def harmonize_datalogger(df,time_list_np64,date_list,hour_list,T_sample):
     return df_h
 
 def harmonize_wstation(df,time_list_np64,date_list,hour_list,T_sample):
+            
     time_cols = ['time','date','hour']
 
     climatic_cols = list(df.columns[2:])
@@ -121,18 +122,27 @@ def harmonize_wstation(df,time_list_np64,date_list,hour_list,T_sample):
     df_h['date'] = date_list
     df_h['hour'] = hour_list
 
-    for i in range (len(time_list_np64)):
-        df_aux = df[df['date'] == np.datetime64(date_list[i])]
-        df_aux = df_aux.sort_values(by='time')
-        df_aux = df_aux.reset_index(drop=True)
-        df_sel = df_aux[df_aux['time']==hour_list[i]]
-        if (df_sel.shape[0] != 0):
-            for j in range (3,df_sel.shape[1]):
-                    df_h.at[i,column_names[j]] = df_sel.iloc[0,j-1]
+    type_df = str(type(df.date.values[0]))
 
+    if type_df != "<class 'numpy.datetime64'>":
+        for i in range (len(time_list_np64)):
+            df_aux = df[df['date'] == np.datetime64(date_list[i])]
+            df_aux = df_aux.sort_values(by='time')
+            df_aux = df_aux.reset_index(drop=True)
+            df_sel = df_aux[df_aux['time']==hour_list[i]]
+            if (df_sel.shape[0] != 0):
+                for j in range (3,df_sel.shape[1]):
+                        df_h.at[i,column_names[j]] = df_sel.iloc[0,j-1]
+    else:
+        for i in range (len(time_list_np64)):
+            df_sel = df[df['date'] == time_list_np64[i]]
+            if (df_sel.shape[0] != 0):
+                for j in range (3,df_sel.shape[1]+1):
+                    df_h.at[i,column_names[j]] = df_sel.iloc[0,j-1]
+                
     print("Harmonized Climatic Variables from Weather Station")
-    qdata.evaluate_nulls(df_h)
-    qdata.evaluate_duplicates(df_h)
+    #qdata.evaluate_nulls(df_h)
+    #qdata.evaluate_duplicates(df_h)
     
     return df_h
 
@@ -199,3 +209,31 @@ def harmonize2(df_inf,df_dlog,T_sample = 15):
     
     return df_inf_h,df_dlog_h
 
+def combine_climvar(df_dlog, df_wst):
+    
+    time_cols = ['time','date','hour']
+    climatic_cols = ['T(C)','RH(%)','DP(C)','Rainfall(mm)']
+    column_names = time_cols + climatic_cols
+    df_climvar = pd.DataFrame(columns = column_names)
+    
+    df_climvar.time = df_dlog.time
+    df_climvar.date = df_dlog.date
+    df_climvar.hour = df_dlog.hour
+    
+    for i in range(df_climvar.shape[0]):
+        #temperature
+        if (np.isnan(df_dlog['T(C)_DL'][i])!=1):
+            df_climvar.at[i,'T(C)'] = df_dlog.loc[i,'T(C)_DL']
+        elif (np.isnan(df_wst['T_max(C)_WS'][i])!=1 and np.isnan(df_wst['T_min(C)_WS'][i])!=1):
+            temp = (df_wst['T_max(C)_WS'][i]+df_wst['T_min(C)_WS'][i])/2
+            df_climvar.at[i,'T(C)'] = temp
+        elif (np.isnan(df_wst['T_max(C)_WS'][i])!=1):
+            df_climvar.at[i,'T(C)'] = df_dlog.loc[i,'T_max(C)_WS']
+        elif (np.isnan(df_wst['T_max(C)_WS'][i])!=1):
+            df_climvar.at[i,'T(C)'] = df_dlog.loc[i,'T_max(C)_WS']
+    
+    df_climvar['RH(%)'] = df_dlog['RH(%)_DL']
+    df_climvar['DP(C)'] = df_dlog['DP(C)_DL']
+    df_climvar['Rainfall(mm)'] = df_wst['Rainfall(mm)_WS']
+
+    return df_climvar

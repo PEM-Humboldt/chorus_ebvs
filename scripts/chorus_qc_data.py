@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+
+"""This script contains functions for performing basic quality analysis of the information, such as:
+- Detection of null values.
+- Detection of duplicate values.
+- Detection of outliers.
+"""
+
 import numpy as np
 import pandas as pd
 
