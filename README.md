@@ -117,6 +117,9 @@ In this step, an EBV-ready dataset is created that contains the estimated vocal 
 
 This project is licensed under the MIT License - see the [LICENSE](https://github.com/breyner-posso/chorus_ebvs/blob/main/LICENSE)
 
+## Acknowledgments
+The authors acknowledge financial support from the intergovernmental Group on Earth Observations (GEO) and Microsoft, under the GEO-Microsoft Planetary Computer Programme (October 2021).
+
 ## Contact
 
 Juan Sebastian Ulloa (julloa@humboldt.org.co)
