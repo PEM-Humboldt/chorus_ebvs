@@ -29,7 +29,7 @@ xarray==2023.3.0
 2. Clone this repository
 
 ```
-git clone https://github.com/breyner-posso/chorus_ebvs/
+git clone https://github.com/PEM-Humboldt/chorus_ebvs
 ```
 
 3. Unzip the content of the folder 'sample_data'. Once unzipped, the directory structure should appear as follows:
